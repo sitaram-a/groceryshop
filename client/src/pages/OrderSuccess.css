@@ -1,0 +1,71 @@
+.os-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+  display: flex; align-items: center; justify-content: center;
+  padding: 32px 20px;
+}
+.os-loading { font-size: 16px; color: #2e7d32; }
+.os-card {
+  background: #fff; border-radius: 20px;
+  padding: 48px 40px; max-width: 560px; width: 100%;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.10);
+  text-align: center;
+}
+.os-icon {
+  font-size: 64px; margin-bottom: 16px;
+  animation: popIn 0.5s cubic-bezier(0.175,0.885,0.32,1.275);
+}
+@keyframes popIn {
+  0%   { transform: scale(0); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+.os-card h1 { font-size: 24px; font-weight: 800; color: #1b1b1b; margin-bottom: 8px; }
+.os-sub { font-size: 14px; color: #666; line-height: 1.6; margin-bottom: 28px; }
+
+.os-info-box {
+  background: #f8fdf9; border: 1.5px solid #bbf7d0;
+  border-radius: 12px; padding: 20px; text-align: left; margin-bottom: 20px;
+}
+.os-info-row {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  font-size: 14px; color: #555; padding: 7px 0;
+  border-bottom: 1px solid #e8f5e9;
+}
+.os-info-row:last-child { border-bottom: none; padding-bottom: 0; }
+.os-info-row strong { color: #1b1b1b; text-align: right; max-width: 60%; }
+.paid          { color: #15803d !important; }
+.pending-pay   { color: #d97706 !important; }
+.status-badge  { color: #2e7d32 !important; text-transform: capitalize; }
+.grand-amt     { color: #1b5e20 !important; font-size: 16px; }
+
+.os-items {
+  text-align: left; margin-bottom: 24px;
+}
+.os-items h3 { font-size: 14px; font-weight: 700; color: #444; margin-bottom: 12px; }
+.os-item {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 13px; color: #555; padding: 6px 0;
+  border-bottom: 1px dashed #eee;
+}
+.os-item:last-child { border-bottom: none; }
+.oi-name { flex: 1; }
+.oi-qty  { color: #999; width: 36px; text-align: center; }
+.oi-price{ font-weight: 700; color: #1b1b1b; }
+
+.os-actions {
+  display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 8px;
+}
+.os-btn-outline {
+  border: 2px solid #2e7d32; color: #2e7d32;
+  padding: 11px 24px; border-radius: 9px;
+  text-decoration: none; font-weight: 700; font-size: 14px;
+  transition: background 0.2s;
+}
+.os-btn-outline:hover { background: #f0fdf4; }
+.os-btn-solid {
+  background: #2e7d32; color: #fff;
+  padding: 11px 24px; border-radius: 9px;
+  text-decoration: none; font-weight: 700; font-size: 14px;
+  transition: background 0.2s;
+}
+.os-btn-solid:hover { background: #1b5e20; }
