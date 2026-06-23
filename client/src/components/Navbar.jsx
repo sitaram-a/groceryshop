@@ -58,7 +58,7 @@ export default function Navbar() {
 
       {/* Mobile menu */}
       {menuOpen && (
-        <div className="mobile-menu">
+        <div className={`mobile-menu ${menuOpen ? 'visible' : 'hidden'}`}>
           <Link to="/"      onClick={close}>🏠 Home</Link>
           <Link to="/shop"  onClick={close}>🛍️ Shop</Link>
           {user && <Link to="/orders" onClick={close}>📦 My Orders</Link>}

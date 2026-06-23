@@ -175,9 +175,19 @@
 .mobile-logout:hover { background: #fef2f2 !important; }
 
 /* ── Responsive ── */
+/* ── Responsive ── */
 @media (max-width: 768px) {
-  .nav-links          { display: none; }
-  .nav-user-desktop   { display: none; }
-  .hamburger          { display: flex; }
-  .mobile-menu        { display: flex; }
+  .nav-links          { display: none !important; }
+  .nav-user-desktop   { display: none !important; }
+  .hamburger          { display: flex !important; }
 }
+
+.mobile-menu {
+  flex-direction: column;
+  background: #fff;
+  border-top: 1px solid #e8f5e9;
+  padding: 12px 0;
+}
+
+.mobile-menu.hidden { display: none; }
+.mobile-menu.visible { display: flex; }
