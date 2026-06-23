@@ -22,3 +22,15 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Environment variables (NEVER commit these)
+.env
+.env.local
+.env.production
+
+# Uploaded files (too large for git)
+server/uploads/products/
+server/uploads/categories/
+
+# OS files
+Thumbs.db
