@@ -14,31 +14,64 @@ const NAV = [
 export default function AdminLayout({ children }) {
   const { logout } = useAuth();
   const navigate   = useNavigate();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [open, setOpen] = useState(false);
 
   const handleLogout = () => { logout(); navigate('/'); };
-  const close = () => setSidebarOpen(false);
+  const close = () => setOpen(false);
+
+  const isMobile = window.innerWidth <= 900;
+
+  const sidebarStyle = isMobile ? {
+    position:   'fixed',
+    top:        0,
+    left:       open ? 0 : -250,
+    width:      220,
+    height:     '100vh',
+    zIndex:     300,
+    transition: 'left 0.25s ease',
+    paddingTop: 20,
+    background: '#1e293b',
+    overflowY:  'auto',
+    boxShadow:  open ? '4px 0 20px rgba(0,0,0,0.4)' : 'none',
+  } : {};
 
   return (
     <div className="admin-shell">
 
       {/* Mobile top bar */}
       <div className="admin-mobile-bar">
-        <button className="admin-hamburger" onClick={() => setSidebarOpen(o => !o)}>
-          {sidebarOpen ? '✕' : '☰'}
+        <button
+          className="admin-hamburger"
+          onClick={() => setOpen(o => !o)}
+          aria-label="Toggle menu"
+        >
+          {open ? '✕' : '☰'}
         </button>
         <span className="admin-mobile-title">⚙️ Admin Panel</span>
         <NavLink to="/" className="admin-mobile-store">🛒 Store</NavLink>
       </div>
 
-      {/* Overlay */}
-      {sidebarOpen && <div className="admin-overlay" onClick={close} />}
+      {/* Dark overlay */}
+      {open && (
+        <div
+          onClick={close}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.5)',
+            zIndex: 299,
+          }}
+        />
+      )}
 
-      <aside className={`admin-sidebar ${sidebarOpen ? 'open' : ''}`}>
+      {/* Sidebar */}
+      <aside className="admin-sidebar" style={sidebarStyle}>
         <p className="admin-sidebar-title">Admin Panel</p>
         {NAV.map(n => (
           <NavLink
-            key={n.to} to={n.to} end={n.end}
+            key={n.to}
+            to={n.to}
+            end={n.end}
             className={({ isActive }) => `admin-nav-item${isActive ? ' active' : ''}`}
             onClick={close}
           >
@@ -55,6 +88,7 @@ export default function AdminLayout({ children }) {
         </span>
       </aside>
 
+      {/* Main content */}
       <main className="admin-content">
         {children}
       </main>
