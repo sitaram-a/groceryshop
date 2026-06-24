@@ -257,7 +257,7 @@
 }
 
 @media (max-width: 900px) {
-  .admin-sidebar { display: none; }
+  /* .admin-sidebar { display: none; } */
   .admin-content { padding: 16px; }
 }
 
@@ -348,4 +348,67 @@
   }
   .admin-content { padding: 12px; }
   .stat-value { font-size: 22px; }
+}
+
+/* ═══════════════════════════════════════════════
+   FIX: Sidebar overlay on mobile (don't push content)
+═══════════════════════════════════════════════ */
+@media (max-width: 900px) {
+  .admin-shell {
+    display: block !important;
+    position: relative;
+  }
+
+  .admin-sidebar {
+    position: fixed !important;
+    top: 0 !important;
+    /* left: -250px !important; */
+    width: 220px !important;
+    height: 100vh !important;
+    z-index: 300 !important;
+    transition: left 0.25s ease !important;
+    padding-top: 20px !important;
+    box-shadow: 4px 0 20px rgba(0,0,0,0.3);
+  }
+
+  .admin-sidebar.open {
+    left: 0 !important;
+  }
+
+  .admin-content {
+    width: 100% !important;
+    padding: 12px !important;
+    box-sizing: border-box !important;
+  }
+
+  .admin-stats-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 10px !important;
+  }
+
+  .stat-card {
+    padding: 14px !important;
+  }
+
+  .stat-value {
+    font-size: 22px !important;
+  }
+
+  .admin-table-wrap {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .admin-page-title {
+    font-size: 18px !important;
+    margin-bottom: 14px !important;
+  }
+}
+
+@media (max-width: 400px) {
+  .admin-stats-grid {
+    grid-template-columns: 1fr 1fr !important;
+  }
+  .stat-value { font-size: 20px !important; }
+  .stat-label { font-size: 10px !important; }
 }
