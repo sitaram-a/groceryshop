@@ -124,7 +124,7 @@ const createProduct = async (req, res) => {
       return res.status(400).json({ success: false, message: 'category_id, name, and price are required.' });
 
     const slug = slugify(name) + '-' + Date.now();
-    const image = req.file ? `/uploads/products/${req.file.filename}` : null;
+    const image = req.file ? req.file.path : null;
 
     const [result] = await db.query(
       `INSERT INTO tbl_products
@@ -153,11 +153,13 @@ const updateProduct = async (req, res) => {
     let image = p.image;
 
     if (req.file) {
-      if (image) {
-        const oldPath = path.join(__dirname, '..', image);
-        if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+      // Delete old image from Cloudinary if exists
+      if (image && image.includes('cloudinary')) {
+        const { cloudinary } = require('../utils/multerConfig');
+        const publicId = image.split('/').slice(-3).join('/').replace(/.[^/.]+$/, '');
+        await cloudinary.uploader.destroy(publicId).catch(() => {});
       }
-      image = `/uploads/products/${req.file.filename}`;
+      image = req.file.path;
     }
 
     await db.query(

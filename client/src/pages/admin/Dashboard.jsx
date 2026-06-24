@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import api from '../../services/api';
 import AdminLayout from './AdminLayout';
+import './Dashboard.css';
 
 const STATUS_BADGE = {
   placed:           'badge-blue',
@@ -12,7 +13,7 @@ const STATUS_BADGE = {
 };
 
 export default function Dashboard() {
-  const [data, setData]     = useState(null);
+  const [data, setData]       = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -33,69 +34,75 @@ export default function Dashboard() {
           {/* Stat cards */}
           <div className="admin-stats-grid">
             {[
-              { icon:'📦', label:'Total Orders',    value: stats.totalOrders,   sub: `${stats.pendingOrders} pending` },
-              { icon:'💰', label:'Total Revenue',   value: `₹${Number(stats.totalRevenue).toLocaleString('en-IN')}`, sub: 'from paid orders' },
-              { icon:'🛍️', label:'Products',        value: stats.totalProducts, sub: `${stats.lowStock} low stock` },
-              { icon:'👥', label:'Customers',       value: stats.totalUsers,    sub: 'registered users' },
-            ].map((s,i) => (
+              { icon:'📦', label:'Total Orders',  value: stats.totalOrders   ?? '0', sub: `${stats.pendingOrders ?? 0} pending` },
+              { icon:'💰', label:'Total Revenue', value: `₹${Number(stats.totalRevenue || 0).toLocaleString('en-IN')}`, sub: 'from paid orders' },
+              { icon:'🛍️', label:'Products',      value: stats.totalProducts ?? '0', sub: `${stats.lowStock ?? 0} low stock` },
+              { icon:'👥', label:'Customers',     value: stats.totalUsers    ?? '0', sub: 'registered users' },
+            ].map((s, i) => (
               <div key={i} className="stat-card">
                 <div className="stat-icon">{s.icon}</div>
                 <div className="stat-label">{s.label}</div>
-                <div className="stat-value">{s.value ?? '—'}</div>
+                <div className="stat-value">{s.value}</div>
                 <div className="stat-sub">{s.sub}</div>
               </div>
             ))}
           </div>
 
-          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:20, marginBottom:24 }}>
-            {/* Recent Orders */}
-            <div className="admin-card" style={{ gridColumn:'1 / -1' }}>
-              <div className="admin-card-header">
-                <h2>Recent Orders</h2>
-              </div>
-              <div className="admin-table-wrap">
-                <table className="admin-table">
-                  <thead>
-                    <tr>
-                      <th>Order #</th><th>Customer</th><th>Amount</th>
-                      <th>Payment</th><th>Status</th><th>Date</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {(data?.recentOrders || []).map(o => (
-                      <tr key={o.id}>
-                        <td><strong>#{o.order_number}</strong></td>
-                        <td>{o.customer_name}</td>
-                        <td>₹{parseFloat(o.grand_total).toFixed(2)}</td>
-                        <td>
-                          <span className={`badge ${o.payment_status==='paid' ? 'badge-green' : 'badge-yellow'}`}>
-                            {o.payment_status}
-                          </span>
-                        </td>
-                        <td>
-                          <span className={`badge ${STATUS_BADGE[o.order_status] || 'badge-gray'}`}>
-                            {o.order_status.replace(/_/g,' ')}
-                          </span>
-                        </td>
-                        <td>{new Date(o.created_at).toLocaleDateString('en-IN')}</td>
-                      </tr>
-                    ))}
-                    {!data?.recentOrders?.length && (
-                      <tr><td colSpan={6} className="admin-empty">No orders yet</td></tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
+          {/* Recent Orders — full width */}
+          <div className="admin-card" style={{ marginBottom: 20 }}>
+            <div className="admin-card-header">
+              <h2>Recent Orders</h2>
             </div>
+            <div className="admin-table-wrap">
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    <th>Order #</th>
+                    <th>Customer</th>
+                    <th>Amount</th>
+                    <th>Payment</th>
+                    <th>Status</th>
+                    <th>Date</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(data?.recentOrders || []).map(o => (
+                    <tr key={o.id}>
+                      <td><strong>#{o.order_number}</strong></td>
+                      <td>{o.customer_name}</td>
+                      <td>₹{parseFloat(o.grand_total).toFixed(2)}</td>
+                      <td>
+                        <span className={`badge ${o.payment_status === 'paid' ? 'badge-green' : 'badge-yellow'}`}>
+                          {o.payment_status}
+                        </span>
+                      </td>
+                      <td>
+                        <span className={`badge ${STATUS_BADGE[o.order_status] || 'badge-gray'}`}>
+                          {o.order_status.replace(/_/g, ' ')}
+                        </span>
+                      </td>
+                      <td>{new Date(o.created_at).toLocaleDateString('en-IN')}</td>
+                    </tr>
+                  ))}
+                  {!data?.recentOrders?.length && (
+                    <tr><td colSpan={6} className="admin-empty">No orders yet</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
 
-            {/* Top Products */}
+          {/* Bottom grid — Top Products + Monthly Sales */}
+          <div className="dashboard-bottom-grid">
             <div className="admin-card">
               <div className="admin-card-header"><h2>Top Selling Products</h2></div>
               <div className="admin-table-wrap">
                 <table className="admin-table">
-                  <thead><tr><th>Product</th><th>Sold</th><th>Revenue</th></tr></thead>
+                  <thead>
+                    <tr><th>Product</th><th>Sold</th><th>Revenue</th></tr>
+                  </thead>
                   <tbody>
-                    {(data?.topProducts || []).map((p,i) => (
+                    {(data?.topProducts || []).map((p, i) => (
                       <tr key={i}>
                         <td>{p.name}</td>
                         <td><strong>{p.total_sold}</strong></td>
@@ -110,14 +117,15 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* Monthly Sales */}
             <div className="admin-card">
               <div className="admin-card-header"><h2>Monthly Revenue (Last 6 months)</h2></div>
               <div className="admin-table-wrap">
                 <table className="admin-table">
-                  <thead><tr><th>Month</th><th>Orders</th><th>Revenue</th></tr></thead>
+                  <thead>
+                    <tr><th>Month</th><th>Orders</th><th>Revenue</th></tr>
+                  </thead>
                   <tbody>
-                    {(data?.monthlySales || []).map((m,i) => (
+                    {(data?.monthlySales || []).map((m, i) => (
                       <tr key={i}>
                         <td>{m.month}</td>
                         <td>{m.orders}</td>

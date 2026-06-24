@@ -42,7 +42,7 @@ const createCategory = async (req, res) => {
     if (!name) return res.status(400).json({ success: false, message: 'Category name is required.' });
 
     const slug = slugify(name);
-    const image = req.file ? `/uploads/categories/${req.file.filename}` : null;
+    const image = req.file ? req.file.path : null;
 
     const [result] = await db.query(
       'INSERT INTO tbl_categories (name, slug, image) VALUES (?, ?, ?)',
@@ -69,12 +69,12 @@ const updateCategory = async (req, res) => {
     let image = existing[0].image;
 
     if (req.file) {
-      // Delete old image
-      if (image) {
-        const oldPath = path.join(__dirname, '..', image);
-        if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+      if (image && image.includes('cloudinary')) {
+        const { cloudinary } = require('../utils/multerConfig');
+        const publicId = image.split('/').slice(-3).join('/').replace(/\.[^/.]+$/, '');
+        await cloudinary.uploader.destroy(publicId).catch(() => {});
       }
-      image = `/uploads/categories/${req.file.filename}`;
+      image = req.file.path;
     }
 
     await db.query(
