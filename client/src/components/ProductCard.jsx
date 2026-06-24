@@ -15,9 +15,15 @@ export default function ProductCard({ product }) {
   const discountPrice = product.discount_price ? parseFloat(product.discount_price) : null;
   const discount = discountPrice ? Math.round(((price - discountPrice) / price) * 100) : 0;
 
-  const imageUrl = product.image
-    ? `${API_URL}${product.image}`
-    : 'https://placehold.co/300x200/e8f5e9/2e7d32?text=No+Image';
+  // const imageUrl = product.image
+  //   ? `${API_URL}${product.image}`
+  //   : 'https://placehold.co/300x200/e8f5e9/2e7d32?text=No+Image';
+
+    const imageUrl = product.image
+  ? product.image.startsWith('http')
+    ? product.image
+    : `${API_URL}${product.image}`
+  : 'https://placehold.co/500x400/e8f5e9/2e7d32?text=No+Image';
 
   const handleAddToCart = async (e) => {
     e.preventDefault();

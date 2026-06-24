@@ -56,10 +56,14 @@ export default function ProductDetail() {
   const price        = parseFloat(product.price);
   const discountPrice = product.discount_price ? parseFloat(product.discount_price) : null;
   const discount     = discountPrice ? Math.round(((price - discountPrice) / price) * 100) : 0;
-  const imageUrl     = product.image
-    ? `${API_URL}${product.image}`
-    : 'https://placehold.co/500x400/e8f5e9/2e7d32?text=No+Image';
-
+  // const imageUrl     = product.image
+  //   ? `${API_URL}${product.image}`
+  //   : 'https://placehold.co/500x400/e8f5e9/2e7d32?text=No+Image';
+const imageUrl = product.image
+  ? product.image.startsWith('http')
+    ? product.image
+    : `${API_URL}${product.image}`
+  : 'https://placehold.co/500x400/e8f5e9/2e7d32?text=No+Image';
   return (
     <div className="pd-page">
       {/* Breadcrumb */}
