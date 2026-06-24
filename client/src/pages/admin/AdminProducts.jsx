@@ -42,7 +42,8 @@ export default function AdminProducts() {
       price: p.price, discount_price: p.discount_price || '', unit: p.unit || '',
       stock: p.stock, is_featured: String(!!p.is_featured), is_active: String(!!p.is_active), image: null,
     });
-    setPreview(p.image ? `${API_URL}${p.image}` : '');
+    // setPreview(p.image ? `${API_URL}${p.image}` : '');
+    setPreview(p.image ? (p.image.startsWith('http') ? p.image : `${API_URL}${p.image}`) : '');
     setError(''); setShowModal(true);
   };
 
@@ -101,7 +102,8 @@ export default function AdminProducts() {
                   <tr key={p.id}>
                     <td>
                       {p.image
-                        ? <img src={`${API_URL}${p.image}`} alt={p.name} className="tbl-img" />
+                        // ? <img src={`${API_URL}${p.image}`} alt={p.name} className="tbl-img" />
+                        ? <img src={p.image?.startsWith('http') ? p.image : `${API_URL}${p.image}`} alt={p.name} className="tbl-img" />
                         : <div className="tbl-no-img">🛍️</div>}
                     </td>
                     <td><strong>{p.name}</strong>{p.unit && <div style={{fontSize:11,color:'#94a3b8'}}>{p.unit}</div>}</td>
