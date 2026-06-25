@@ -134,13 +134,36 @@ const getMyOrders = async (req, res) => {
 };
 
 // GET /api/orders/:id
+// const getOrderById = async (req, res) => {
+//   try {
+//     const [orders] = await db.query(
+//       'SELECT * FROM tbl_orders WHERE id = ? AND user_id = ?',
+//       [req.params.id, req.user.id]
+//     );
+//     if (!orders.length)
+//       return res.status(404).json({ success: false, message: 'Order not found.' });
+
+//     const [items] = await db.query(
+//       'SELECT * FROM tbl_order_items WHERE order_id = ?',
+//       [req.params.id]
+//     );
+//     return res.json({ success: true, order: { ...orders[0], items } });
+//   } catch (err) {
+//     return res.status(500).json({ success: false, message: 'Server error.' });
+//   }
+// };
+
 const getOrderById = async (req, res) => {
   try {
-    const [orders] = await db.query(
-      'SELECT * FROM tbl_orders WHERE id = ? AND user_id = ?',
-      [req.params.id, req.user.id]
-    );
-    if (!orders.length)
+    const isAdmin = req.user.role === 'admin';
+    const query = isAdmin
+      ? 'SELECT * FROM tbl_orders WHERE id = ?'
+      : 'SELECT * FROM tbl_orders WHERE id = ? AND user_id = ?';
+    const params = isAdmin ? [req.params.id] : [req.params.id, req.user.id];
+
+    const [orders] = await db.query(query, params);
+
+      if (!orders.length)
       return res.status(404).json({ success: false, message: 'Order not found.' });
 
     const [items] = await db.query(
@@ -187,7 +210,8 @@ const getAllOrders = async (req, res) => {
 // PUT /api/orders/:id/status  (admin)
 const updateOrderStatus = async (req, res) => {
   try {
-    const { status } = req.body;
+    const { status, payment_status } = req.body;
+    console.log('updateOrderStatus called:', { id: req.params.id, status, payment_status });
     const validStatuses = ['placed','confirmed','processing','out_for_delivery','delivered','cancelled'];
     if (!validStatuses.includes(status))
       return res.status(400).json({ success: false, message: 'Invalid status.' });
