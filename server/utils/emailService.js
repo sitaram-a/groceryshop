@@ -1,18 +1,18 @@
-const { BrevoClient } = require('@getbrevo/brevo');
+const { Resend } = require('resend');
 const { welcomeTemplate, orderConfirmationTemplate, orderStatusTemplate } = require('./emailTemplates');
 
+const resend = new Resend(process.env.RESEND_API_KEY);
+
 const sendMail = async ({ to, subject, html }) => {
-  const client = new BrevoClient({ apiKey: process.env.BREVO_API_KEY });
-
-  const info = await client.transactionalEmails.sendTransacEmail({
-    sender:      { name: process.env.EMAIL_FROM_NAME || 'GroceryShop', email: process.env.EMAIL_FROM },
-    to:          [{ email: to }],
+  const { data, error } = await resend.emails.send({
+    from:    `${process.env.EMAIL_FROM_NAME || 'GroceryShop'} <onboarding@resend.dev>`,
+    to,
     subject,
-    htmlContent: html,
+    html,
   });
-
-  console.log('✅ Email sent:', info.messageId);
-  return info;
+  if (error) throw new Error(error.message);
+  console.log('✅ Email sent:', data.id);
+  return data;
 };
 
 const sendWelcomeEmail = ({ name, email }) =>
