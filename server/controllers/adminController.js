@@ -20,34 +20,44 @@ const getDashboardStats = async (req, res) => {
     const [topProducts] = await db.query(
       `SELECT p.name, SUM(oi.quantity) AS total_sold, SUM(oi.subtotal) AS revenue
        FROM tbl_order_items oi JOIN tbl_products p ON p.id=oi.product_id
-       GROUP BY oi.product_id ORDER BY total_sold DESC LIMIT 5`
+       GROUP BY oi.product_id, p.name ORDER BY total_sold DESC LIMIT 5`
     );
 
-    // const [monthlySales] = await db.query(
-    //   `SELECT DATE_FORMAT(created_at,'%b %Y') AS month,
-    //           COUNT(*) AS orders,
-    //           COALESCE(SUM(grand_total),0) AS revenue
-    //    FROM tbl_orders WHERE payment_status='paid'
-    //      AND created_at >= DATE_SUB(NOW(), INTERVAL 6 MONTH)
-    //    GROUP BY DATE_FORMAT(created_at,'%Y-%m')
-    //    ORDER BY MIN(created_at)`
-    // );
-
     const [monthlySales] = await db.query(
-  `SELECT DATE_FORMAT(MIN(created_at),'%b %Y') AS month,
-          COUNT(*) AS orders,
-          COALESCE(SUM(grand_total),0) AS revenue
-   FROM tbl_orders WHERE payment_status='paid'
-     AND created_at >= DATE_SUB(NOW(), INTERVAL 6 MONTH)
-   GROUP BY DATE_FORMAT(created_at,'%Y-%m')
-   ORDER BY DATE_FORMAT(created_at,'%Y-%m')`
-);
+      `SELECT DATE_FORMAT(MIN(created_at),'%b %Y') AS month,
+              COUNT(*) AS orders,
+              COALESCE(SUM(grand_total),0) AS revenue
+       FROM tbl_orders WHERE payment_status='paid'
+         AND created_at >= DATE_SUB(NOW(), INTERVAL 6 MONTH)
+       GROUP BY DATE_FORMAT(created_at,'%Y-%m')
+       ORDER BY DATE_FORMAT(created_at,'%Y-%m')`
+    );
+
+    // Order status breakdown for pie chart
+    const [ordersByStatus] = await db.query(
+      `SELECT order_status AS status, COUNT(*) AS count
+       FROM tbl_orders GROUP BY order_status`
+    );
+
+    // Daily revenue last 14 days
+    const [dailyRevenue] = await db.query(
+      `SELECT DATE_FORMAT(MIN(created_at),'%d %b') AS day,
+              COALESCE(SUM(grand_total),0) AS revenue,
+              COUNT(*) AS orders
+       FROM tbl_orders
+       WHERE payment_status='paid'
+         AND created_at >= DATE_SUB(NOW(), INTERVAL 14 DAY)
+       GROUP BY DATE(created_at)
+       ORDER BY DATE(created_at)`
+    );
 
     return res.json({
       success: true,
-      stats: { totalOrders, totalRevenue: parseFloat(totalRevenue).toFixed(2),
-               totalProducts, totalUsers, pendingOrders, lowStock },
-      recentOrders, topProducts, monthlySales,
+      stats: {
+        totalOrders, totalRevenue: parseFloat(totalRevenue).toFixed(2),
+        totalProducts, totalUsers, pendingOrders, lowStock
+      },
+      recentOrders, topProducts, monthlySales, ordersByStatus, dailyRevenue,
     });
   } catch (err) {
     console.error('getDashboardStats:', err);
@@ -90,4 +100,55 @@ const toggleUserStatus = async (req, res) => {
   }
 };
 
-module.exports = { getDashboardStats, getAllUsers, toggleUserStatus };
+// GET /api/admin/coupons
+const getAllCoupons = async (req, res) => {
+  try {
+    const [coupons] = await db.query('SELECT * FROM tbl_coupons ORDER BY created_at DESC');
+    return res.json({ success: true, coupons });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
+// POST /api/admin/coupons
+const createCoupon = async (req, res) => {
+  try {
+    const { code, type, value, min_order, max_discount, expires_at, usage_limit } = req.body;
+    if (!code || !type || !value)
+      return res.status(400).json({ success: false, message: 'code, type and value are required.' });
+
+    await db.query(
+      `INSERT INTO tbl_coupons (code, type, value, min_order, max_discount, expires_at, usage_limit)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [code.toUpperCase(), type, value, min_order || 0, max_discount || null, expires_at || null, usage_limit || null]
+    );
+    return res.status(201).json({ success: true, message: 'Coupon created.' });
+  } catch (err) {
+    if (err.code === 'ER_DUP_ENTRY')
+      return res.status(400).json({ success: false, message: 'Coupon code already exists.' });
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
+// PUT /api/admin/coupons/:id
+const updateCoupon = async (req, res) => {
+  try {
+    const { is_active } = req.body;
+    await db.query('UPDATE tbl_coupons SET is_active=? WHERE id=?', [is_active ? 1 : 0, req.params.id]);
+    return res.json({ success: true, message: 'Coupon updated.' });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
+// DELETE /api/admin/coupons/:id
+const deleteCoupon = async (req, res) => {
+  try {
+    await db.query('DELETE FROM tbl_coupons WHERE id=?', [req.params.id]);
+    return res.json({ success: true, message: 'Coupon deleted.' });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
+module.exports = { getDashboardStats, getAllUsers, toggleUserStatus, getAllCoupons, createCoupon, updateCoupon, deleteCoupon };
