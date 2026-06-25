@@ -1,19 +1,16 @@
-const SibApiV3Sdk = require('@getbrevo/brevo');
+const { BrevoClient } = require('@getbrevo/brevo');
 const { welcomeTemplate, orderConfirmationTemplate, orderStatusTemplate } = require('./emailTemplates');
 
 const sendMail = async ({ to, subject, html }) => {
-  const defaultClient = SibApiV3Sdk.ApiClient.instance;
-  defaultClient.authentications['api-key'].apiKey = process.env.BREVO_API_KEY;
+  const client = new BrevoClient({ apiKey: process.env.BREVO_API_KEY });
 
-  const apiInstance = new SibApiV3Sdk.TransactionalEmailsApi();
-  const sendSmtpEmail = new SibApiV3Sdk.SendSmtpEmail();
+  const info = await client.transactionalEmails.sendTransacEmail({
+    sender:      { name: process.env.EMAIL_FROM_NAME || 'GroceryShop', email: process.env.EMAIL_FROM },
+    to:          [{ email: to }],
+    subject,
+    htmlContent: html,
+  });
 
-  sendSmtpEmail.sender      = { name: process.env.EMAIL_FROM_NAME || 'GroceryShop', email: process.env.EMAIL_FROM };
-  sendSmtpEmail.to          = [{ email: to }];
-  sendSmtpEmail.subject     = subject;
-  sendSmtpEmail.htmlContent = html;
-
-  const info = await apiInstance.sendTransacEmail(sendSmtpEmail);
   console.log('✅ Email sent:', info.messageId);
   return info;
 };
