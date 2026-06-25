@@ -84,7 +84,7 @@ export default function AdminProducts() {
       <div className="admin-card">
         <div className="admin-card-header">
           <h2>All Products {pagination.total !== undefined ? `(${pagination.total})` : ''}</h2>
-          <div style={{ display:'flex', gap:10 }}>
+          <div className="admin-srch-section" style={{ display:'flex', gap:10 }}>
             <input className="admin-search" placeholder="Search products..."
               value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} />
             <button className="btn-primary" onClick={openAdd}>+ Add Product</button>

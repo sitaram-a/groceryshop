@@ -340,6 +340,10 @@
   div[style*="grid-template-columns:'1fr 1fr'"] {
     grid-template-columns: 1fr !important;
   }
+
+  .admin-card-header,.admin-srch-section{
+    flex-direction: column;
+  }
 }
 
 @media (max-width: 480px) {
