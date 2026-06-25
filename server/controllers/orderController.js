@@ -19,7 +19,6 @@ const placeOrder = async (req, res) => {
     if (!delivery_address)
       return res.status(400).json({ success: false, message: 'Delivery address is required.' });
 
-    // Get cart items
     const [cartItems] = await conn.query(
       `SELECT c.id AS cart_id, c.quantity, p.id AS product_id,
               p.name, p.price, p.discount_price, p.stock
@@ -32,7 +31,6 @@ const placeOrder = async (req, res) => {
     if (!cartItems.length)
       return res.status(400).json({ success: false, message: 'Your cart is empty.' });
 
-    // Validate stock
     for (const item of cartItems) {
       if (item.quantity > item.stock) {
         await conn.rollback();
@@ -43,17 +41,15 @@ const placeOrder = async (req, res) => {
       }
     }
 
-    // Calculate totals
     const total = cartItems.reduce((sum, i) => {
       const price = parseFloat(i.discount_price || i.price);
       return sum + price * i.quantity;
     }, 0);
 
-    const deliveryCharge = total >= 500 ? 0 : 40; // Free delivery above ₹500
+    const deliveryCharge = total >= 500 ? 0 : 40;
     const grandTotal     = total + deliveryCharge;
     const orderNumber    = generateOrderNumber();
 
-    // Insert order
     const [orderResult] = await conn.query(
       `INSERT INTO tbl_orders
        (order_number, user_id, total_amount, delivery_charge, grand_total,
@@ -64,7 +60,6 @@ const placeOrder = async (req, res) => {
     );
     const orderId = orderResult.insertId;
 
-    // Insert order items + deduct stock
     for (const item of cartItems) {
       const unitPrice = parseFloat(item.discount_price || item.price);
       await conn.query(
@@ -80,7 +75,6 @@ const placeOrder = async (req, res) => {
       );
     }
 
-    // Clear cart
     await conn.query('DELETE FROM tbl_cart WHERE user_id = ?', [req.user.id]);
     await conn.commit();
 
@@ -134,36 +128,16 @@ const getMyOrders = async (req, res) => {
 };
 
 // GET /api/orders/:id
-// const getOrderById = async (req, res) => {
-//   try {
-//     const [orders] = await db.query(
-//       'SELECT * FROM tbl_orders WHERE id = ? AND user_id = ?',
-//       [req.params.id, req.user.id]
-//     );
-//     if (!orders.length)
-//       return res.status(404).json({ success: false, message: 'Order not found.' });
-
-//     const [items] = await db.query(
-//       'SELECT * FROM tbl_order_items WHERE order_id = ?',
-//       [req.params.id]
-//     );
-//     return res.json({ success: true, order: { ...orders[0], items } });
-//   } catch (err) {
-//     return res.status(500).json({ success: false, message: 'Server error.' });
-//   }
-// };
-
 const getOrderById = async (req, res) => {
   try {
     const isAdmin = req.user.role === 'admin';
-    const query = isAdmin
+    const query  = isAdmin
       ? 'SELECT * FROM tbl_orders WHERE id = ?'
       : 'SELECT * FROM tbl_orders WHERE id = ? AND user_id = ?';
     const params = isAdmin ? [req.params.id] : [req.params.id, req.user.id];
 
     const [orders] = await db.query(query, params);
-
-      if (!orders.length)
+    if (!orders.length)
       return res.status(404).json({ success: false, message: 'Order not found.' });
 
     const [items] = await db.query(
@@ -172,6 +146,7 @@ const getOrderById = async (req, res) => {
     );
     return res.json({ success: true, order: { ...orders[0], items } });
   } catch (err) {
+    console.error('getOrderById:', err);
     return res.status(500).json({ success: false, message: 'Server error.' });
   }
 };
@@ -185,7 +160,6 @@ const getAllOrders = async (req, res) => {
     const params = [];
 
     if (status) { conditions.push('o.order_status = ?'); params.push(status); }
-
     const where = conditions.length ? 'WHERE ' + conditions.join(' AND ') : '';
 
     const [orders] = await db.query(
@@ -203,6 +177,7 @@ const getAllOrders = async (req, res) => {
 
     return res.json({ success: true, orders, total, page: parseInt(page) });
   } catch (err) {
+    console.error('getAllOrders:', err);
     return res.status(500).json({ success: false, message: 'Server error.' });
   }
 };
@@ -210,36 +185,38 @@ const getAllOrders = async (req, res) => {
 // PUT /api/orders/:id/status  (admin)
 const updateOrderStatus = async (req, res) => {
   try {
-    const { status, payment_status } = req.body;
-    console.log('updateOrderStatus called:', { id: req.params.id, status, payment_status });
+    const { status } = req.body;
     const validStatuses = ['placed','confirmed','processing','out_for_delivery','delivered','cancelled'];
-    if (!validStatuses.includes(status))
+
+    if (!status || !validStatuses.includes(status))
       return res.status(400).json({ success: false, message: 'Invalid status.' });
 
     const [orders] = await db.query('SELECT * FROM tbl_orders WHERE id = ?', [req.params.id]);
-    if (!orders.length) return res.status(404).json({ success: false, message: 'Order not found.' });
+    if (!orders.length)
+      return res.status(404).json({ success: false, message: 'Order not found.' });
 
     await db.query('UPDATE tbl_orders SET order_status = ? WHERE id = ?', [status, req.params.id]);
 
-    // Email the customer
+    // Send status email (non-blocking)
     const [user] = await db.query(
       'SELECT name, email FROM tbl_users WHERE id = ?', [orders[0].user_id]
     );
     if (user.length) {
       sendOrderStatusEmail({
-        email: user[0].email, name: user[0].name,
-        orderNumber: orders[0].order_number, status,
+        email:       user[0].email,
+        name:        user[0].name,
+        orderNumber: orders[0].order_number,
+        status,
       }).catch(e => console.error('Status email failed:', e.message));
     }
 
     return res.json({ success: true, message: 'Order status updated.' });
   } catch (err) {
+    console.error('updateOrderStatus error:', err);
     return res.status(500).json({ success: false, message: 'Server error.' });
   }
 };
 
-// POST /api/orders/:id/cancel  (user — cancel a pending/placed razorpay order)
-// Restores stock and marks order cancelled. Called when user dismisses Razorpay modal.
 // POST /api/orders/:id/cancel
 const cancelOrder = async (req, res) => {
   const conn = await db.getConnection();
@@ -255,7 +232,6 @@ const cancelOrder = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Order not found or already processed.' });
     }
 
-    // Restore stock
     const [items] = await conn.query(
       'SELECT product_id, quantity FROM tbl_order_items WHERE order_id = ?',
       [req.params.id]
@@ -267,7 +243,6 @@ const cancelOrder = async (req, res) => {
       );
     }
 
-    // Mark order cancelled + failed payment
     await conn.query(
       `UPDATE tbl_orders SET order_status = 'cancelled', payment_status = 'failed' WHERE id = ?`,
       [req.params.id]
