@@ -111,6 +111,25 @@ const getAllCoupons = async (req, res) => {
 };
 
 // POST /api/admin/coupons
+// const createCoupon = async (req, res) => {
+//   try {
+//     const { code, type, value, min_order, max_discount, expires_at, usage_limit } = req.body;
+//     if (!code || !type || !value)
+//       return res.status(400).json({ success: false, message: 'code, type and value are required.' });
+
+//     await db.query(
+//       `INSERT INTO tbl_coupons (code, type, value, min_order, max_discount, expires_at, usage_limit)
+//        VALUES (?, ?, ?, ?, ?, ?, ?)`,
+//       [code.toUpperCase(), type, value, min_order || 0, max_discount || null, expires_at || null, usage_limit || null]
+//     );
+//     return res.status(201).json({ success: true, message: 'Coupon created.' });
+//   } catch (err) {
+//     if (err.code === 'ER_DUP_ENTRY')
+//       return res.status(400).json({ success: false, message: 'Coupon code already exists.' });
+//     return res.status(500).json({ success: false, message: 'Server error.' });
+//   }
+// };
+
 const createCoupon = async (req, res) => {
   try {
     const { code, type, value, min_order, max_discount, expires_at, usage_limit } = req.body;
@@ -118,7 +137,7 @@ const createCoupon = async (req, res) => {
       return res.status(400).json({ success: false, message: 'code, type and value are required.' });
 
     await db.query(
-      `INSERT INTO tbl_coupons (code, type, value, min_order, max_discount, expires_at, usage_limit)
+      `INSERT INTO tbl_coupons (code, discount_type, discount_value, min_order, max_discount, expires_at, usage_limit)
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
       [code.toUpperCase(), type, value, min_order || 0, max_discount || null, expires_at || null, usage_limit || null]
     );
@@ -129,6 +148,8 @@ const createCoupon = async (req, res) => {
     return res.status(500).json({ success: false, message: 'Server error.' });
   }
 };
+
+
 
 // PUT /api/admin/coupons/:id
 const updateCoupon = async (req, res) => {

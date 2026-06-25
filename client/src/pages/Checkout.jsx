@@ -31,11 +31,11 @@ export default function Checkout() {
   const [error,   setError]   = useState('');
 
   const deliveryCharge = cartTotal >= 500 ? 0 : 40;
-  const discount       = coupon
-    ? coupon.type === 'percent'
-      ? Math.min((cartTotal * coupon.value) / 100, coupon.max_discount || Infinity)
-      : coupon.value
-    : 0;
+  const discount = coupon
+  ? coupon.type === 'percent'
+    ? Math.min((cartTotal * coupon.value) / 100, coupon.max_discount || Infinity)
+    : coupon.value
+  : 0;
   const grandTotal = Math.max(0, cartTotal + deliveryCharge - discount);
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
