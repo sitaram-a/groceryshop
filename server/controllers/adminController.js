@@ -23,15 +23,25 @@ const getDashboardStats = async (req, res) => {
        GROUP BY oi.product_id ORDER BY total_sold DESC LIMIT 5`
     );
 
+    // const [monthlySales] = await db.query(
+    //   `SELECT DATE_FORMAT(created_at,'%b %Y') AS month,
+    //           COUNT(*) AS orders,
+    //           COALESCE(SUM(grand_total),0) AS revenue
+    //    FROM tbl_orders WHERE payment_status='paid'
+    //      AND created_at >= DATE_SUB(NOW(), INTERVAL 6 MONTH)
+    //    GROUP BY DATE_FORMAT(created_at,'%Y-%m')
+    //    ORDER BY MIN(created_at)`
+    // );
+
     const [monthlySales] = await db.query(
-      `SELECT DATE_FORMAT(created_at,'%b %Y') AS month,
-              COUNT(*) AS orders,
-              COALESCE(SUM(grand_total),0) AS revenue
-       FROM tbl_orders WHERE payment_status='paid'
-         AND created_at >= DATE_SUB(NOW(), INTERVAL 6 MONTH)
-       GROUP BY DATE_FORMAT(created_at,'%Y-%m')
-       ORDER BY MIN(created_at)`
-    );
+  `SELECT DATE_FORMAT(MIN(created_at),'%b %Y') AS month,
+          COUNT(*) AS orders,
+          COALESCE(SUM(grand_total),0) AS revenue
+   FROM tbl_orders WHERE payment_status='paid'
+     AND created_at >= DATE_SUB(NOW(), INTERVAL 6 MONTH)
+   GROUP BY DATE_FORMAT(created_at,'%Y-%m')
+   ORDER BY DATE_FORMAT(created_at,'%Y-%m')`
+);
 
     return res.json({
       success: true,
