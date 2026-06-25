@@ -104,4 +104,44 @@ const confirmCOD = async (req, res) => {
   }
 };
 
-module.exports = { createRazorpayOrder, verifyPayment, confirmCOD };
+// Add this function to server/controllers/paymentController.js
+
+// POST /api/payment/validate-coupon
+const validateCoupon = async (req, res) => {
+  try {
+    const { code, cart_total } = req.body;
+    if (!code) return res.status(400).json({ success: false, message: 'Coupon code required.' });
+
+    const [coupons] = await db.query(
+      `SELECT * FROM tbl_coupons WHERE code = ? AND is_active = 1`,
+      [code.toUpperCase()]
+    );
+
+    if (!coupons.length)
+      return res.status(404).json({ success: false, message: 'Invalid or expired coupon code.' });
+
+    const coupon = coupons[0];
+
+    // Check expiry
+    if (coupon.expires_at && new Date(coupon.expires_at) < new Date())
+      return res.status(400).json({ success: false, message: 'This coupon has expired.' });
+
+    // Check usage limit
+    if (coupon.usage_limit && coupon.used_count >= coupon.usage_limit)
+      return res.status(400).json({ success: false, message: 'This coupon has reached its usage limit.' });
+
+    // Check min order
+    if (coupon.min_order && parseFloat(cart_total) < parseFloat(coupon.min_order))
+      return res.status(400).json({
+        success: false,
+        message: `Minimum order amount of ₹${coupon.min_order} required for this coupon.`
+      });
+
+    return res.json({ success: true, coupon });
+  } catch (err) {
+    console.error('validateCoupon:', err);
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
+module.exports = { createRazorpayOrder, verifyPayment, confirmCOD, validateCoupon };

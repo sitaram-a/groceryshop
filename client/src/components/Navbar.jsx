@@ -8,10 +8,21 @@ export default function Navbar() {
   const { user, logout } = useAuth();
   const { cartCount }    = useCart();
   const navigate         = useNavigate();
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [menuOpen, setMenuOpen]   = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const handleLogout = () => { logout(); navigate('/'); setMenuOpen(false); };
   const close = () => setMenuOpen(false);
+
+  const handleSearch = (e) => {
+    e.preventDefault();
+    if (!searchQuery.trim()) return;
+    navigate(`/shop?search=${encodeURIComponent(searchQuery.trim())}`);
+    setSearchQuery('');
+    setSearchOpen(false);
+    setMenuOpen(false);
+  };
 
   return (
     <nav className="navbar">
@@ -25,7 +36,24 @@ export default function Navbar() {
           {user && <Link to="/orders">My Orders</Link>}
         </div>
 
+        {/* Desktop search bar */}
+        <form className="nav-search-form" onSubmit={handleSearch}>
+          <input
+            type="text"
+            className="nav-search-input"
+            placeholder="Search products..."
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+          />
+          <button type="submit" className="nav-search-btn">🔍</button>
+        </form>
+
         <div className="nav-actions">
+          {/* Mobile search toggle */}
+          <button className="search-toggle" onClick={() => setSearchOpen(o => !o)} aria-label="Search">
+            🔍
+          </button>
+
           <Link to="/cart" className="cart-btn" onClick={close}>
             🛒 Cart
             {cartCount > 0 && <span className="cart-badge">{cartCount}</span>}
@@ -56,30 +84,42 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* Mobile menu */}
-      {menuOpen && (
-        <div className={`mobile-menu ${menuOpen ? 'visible' : 'hidden'}`}>
-          <Link to="/"      onClick={close}>🏠 Home</Link>
-          <Link to="/shop"  onClick={close}>🛍️ Shop</Link>
-          {user && <Link to="/orders" onClick={close}>📦 My Orders</Link>}
-          <Link to="/cart"  onClick={close}>🛒 Cart {cartCount > 0 && `(${cartCount})`}</Link>
-          <div className="mobile-divider" />
-          {user ? (
-            <>
-              <span className="mobile-greeting">Hi, {user.name.split(' ')[0]} 👋</span>
-              {user.role === 'admin' && (
-                <Link to="/admin" onClick={close}>⚙️ Admin Panel</Link>
-              )}
-              <button onClick={handleLogout} className="mobile-logout">🚪 Logout</button>
-            </>
-          ) : (
-            <>
-              <Link to="/login"    onClick={close}>🔑 Login</Link>
-              <Link to="/register" onClick={close}>✨ Register</Link>
-            </>
-          )}
-        </div>
+      {/* Mobile search bar */}
+      {searchOpen && (
+        <form className="mobile-search-bar" onSubmit={handleSearch}>
+          <input
+            type="text"
+            placeholder="Search products..."
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            autoFocus
+          />
+          <button type="submit">🔍 Search</button>
+        </form>
       )}
+
+      {/* Mobile menu */}
+      <div className={`mobile-menu ${menuOpen ? 'visible' : 'hidden'}`}>
+        <Link to="/"      onClick={close}>🏠 Home</Link>
+        <Link to="/shop"  onClick={close}>🛍️ Shop</Link>
+        {user && <Link to="/orders" onClick={close}>📦 My Orders</Link>}
+        <Link to="/cart"  onClick={close}>🛒 Cart {cartCount > 0 && `(${cartCount})`}</Link>
+        <div className="mobile-divider" />
+        {user ? (
+          <>
+            <span className="mobile-greeting">Hi, {user.name.split(' ')[0]} 👋</span>
+            {user.role === 'admin' && (
+              <Link to="/admin" onClick={close}>⚙️ Admin Panel</Link>
+            )}
+            <button onClick={handleLogout} className="mobile-logout">🚪 Logout</button>
+          </>
+        ) : (
+          <>
+            <Link to="/login"    onClick={close}>🔑 Login</Link>
+            <Link to="/register" onClick={close}>✨ Register</Link>
+          </>
+        )}
+      </div>
     </nav>
   );
 }

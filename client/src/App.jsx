@@ -21,6 +21,7 @@ import AdminProducts   from './pages/admin/AdminProducts';
 import AdminCategories from './pages/admin/AdminCategories';
 import AdminOrders     from './pages/admin/AdminOrders';
 import AdminUsers      from './pages/admin/AdminUsers';
+import AdminCoupons    from './pages/admin/Coupons';
 
 function Layout({ children }) {
   return (
@@ -67,6 +68,8 @@ function App() {
               element={<AdminRoute><AdminOrders /></AdminRoute>} />
             <Route path="/admin/users"
               element={<AdminRoute><AdminUsers /></AdminRoute>} />
+              <Route path="/admin/coupons" 
+              element={<AdminCoupons />} />
 
             {/* ── Fallback ── */}
             <Route path="*" element={<Navigate to="/" replace />} />

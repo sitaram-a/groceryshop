@@ -12,9 +12,6 @@ export default function Checkout() {
   const { user } = useAuth();
   const navigate  = useNavigate();
 
-  const deliveryCharge = cartTotal >= 500 ? 0 : 40;
-  const grandTotal     = cartTotal + deliveryCharge;
-
   const [form, setForm] = useState({
     name:    user?.name  || '',
     email:   user?.email || '',
@@ -26,56 +23,77 @@ export default function Checkout() {
     notes:   '',
   });
   const [paymentMethod, setPaymentMethod] = useState('razorpay');
+  const [couponCode,    setCouponCode]    = useState('');
+  const [coupon,        setCoupon]        = useState(null);
+  const [couponLoading, setCouponLoading] = useState(false);
+  const [couponError,   setCouponError]   = useState('');
   const [loading, setLoading] = useState(false);
   const [error,   setError]   = useState('');
 
+  const deliveryCharge = cartTotal >= 500 ? 0 : 40;
+  const discount       = coupon
+    ? coupon.type === 'percent'
+      ? Math.min((cartTotal * coupon.value) / 100, coupon.max_discount || Infinity)
+      : coupon.value
+    : 0;
+  const grandTotal = Math.max(0, cartTotal + deliveryCharge - discount);
+
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+  const buildAddress = () => `${form.address}, ${form.city}, ${form.state} - ${form.pincode}`;
 
-  const buildAddress = () =>
-    `${form.address}, ${form.city}, ${form.state} - ${form.pincode}`;
+  // Apply coupon
+  const applyCoupon = async () => {
+    if (!couponCode.trim()) return;
+    setCouponLoading(true); setCouponError(''); setCoupon(null);
+    try {
+      const res = await api.post('/payment/validate-coupon', {
+        code: couponCode.trim().toUpperCase(),
+        cart_total: cartTotal,
+      });
+      setCoupon(res.data.coupon);
+    } catch (err) {
+      setCouponError(err.response?.data?.message || 'Invalid coupon code.');
+    } finally {
+      setCouponLoading(false);
+    }
+  };
 
-  // ── Step 1: Place order in DB ──────────────────────────────────
+  const removeCoupon = () => { setCoupon(null); setCouponCode(''); setCouponError(''); };
+
+  // Place order in DB
   const placeOrderInDB = async () => {
     const res = await api.post('/orders/place', {
       delivery_address: buildAddress(),
       notes:            form.notes || null,
       payment_method:   paymentMethod,
+      coupon_code:      coupon?.code || null,
+      discount_amount:  discount || 0,
     });
-    return res.data.order; // { id, order_number, grand_total }
+    return res.data.order;
   };
 
-  // ── Cancel order (called when Razorpay is dismissed/fails) ────
+  // Cancel order
   const cancelOrderInDB = async (orderId) => {
-    try {
-      await api.post(`/orders/${orderId}/cancel`);
-    } catch (e) {
-      console.error('Failed to cancel order:', e.message);
-    }
+    try { await api.post(`/orders/${orderId}/cancel`); }
+    catch (e) { console.error('Failed to cancel order:', e.message); }
   };
 
-  // ── Razorpay handler ──────────────────────────────────────────
+  // Razorpay handler
   const handleRazorpay = (order) => {
     return new Promise(async (resolve, reject) => {
       if (!window.Razorpay) {
         await cancelOrderInDB(order.id);
-        return reject(new Error('Razorpay SDK not loaded. Check your internet connection.'));
+        return reject(new Error('Razorpay SDK not loaded.'));
       }
-
       if (!RZP_KEY || RZP_KEY === 'rzp_test_xxxxxxxxxx') {
         await cancelOrderInDB(order.id);
-        return reject(new Error('Razorpay key not configured. Set VITE_RAZORPAY_KEY_ID in client/.env'));
+        return reject(new Error('Razorpay key not configured.'));
       }
-
-      let rzpOrderId = null;
-
       try {
-        // Create Razorpay order
         const rzpRes = await api.post('/payment/create-order', {
-          amount: Math.round(parseFloat(order.grand_total) * 100), // paise
+          amount: Math.round(parseFloat(order.grand_total) * 100),
         });
         const rzpOrder = rzpRes.data.order;
-        rzpOrderId = rzpOrder.id;
-
         const options = {
           key:         RZP_KEY,
           amount:      rzpOrder.amount,
@@ -83,12 +101,8 @@ export default function Checkout() {
           name:        'GroceryShop',
           description: `Order #${order.order_number}`,
           order_id:    rzpOrder.id,
-          prefill: {
-            name:    form.name,
-            email:   form.email,
-            contact: form.phone,
-          },
-          theme: { color: '#2e7d32' },
+          prefill:     { name: form.name, email: form.email, contact: form.phone },
+          theme:       { color: '#2e7d32' },
           handler: async (response) => {
             try {
               await api.post('/payment/verify', {
@@ -100,63 +114,49 @@ export default function Checkout() {
               resolve();
             } catch (err) {
               await cancelOrderInDB(order.id);
-              reject(new Error('Payment verification failed. Your order has been cancelled.'));
+              reject(new Error('Payment verification failed.'));
             }
           },
           modal: {
             ondismiss: async () => {
               await cancelOrderInDB(order.id);
-              reject(new Error('Payment cancelled. Your order has been cancelled.'));
+              reject(new Error('Payment cancelled.'));
             },
           },
         };
-
         const rzp = new window.Razorpay(options);
         rzp.on('payment.failed', async () => {
           await cancelOrderInDB(order.id);
-          reject(new Error('Payment failed. Your order has been cancelled.'));
+          reject(new Error('Payment failed.'));
         });
         rzp.open();
       } catch (err) {
-        // Failed before opening modal (e.g. create-order API failed)
         await cancelOrderInDB(order.id);
-        reject(new Error(err.response?.data?.message || 'Failed to initiate payment. Order cancelled.'));
+        reject(new Error(err.response?.data?.message || 'Failed to initiate payment.'));
       }
     });
   };
 
-  // ── COD handler ───────────────────────────────────────────────
   const handleCOD = async (order) => {
     await api.post('/payment/cod-confirm', { order_id: order.id });
   };
 
-  // ── Main submit ───────────────────────────────────────────────
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.address || !form.city || !form.state || !form.pincode) {
+    if (!form.address || !form.city || !form.state || !form.pincode)
       return setError('Please fill in all delivery address fields.');
-    }
     if (!cartItems.length) return setError('Your cart is empty.');
 
-    setError('');
-    setLoading(true);
-
+    setError(''); setLoading(true);
     try {
       const order = await placeOrderInDB();
-
-      if (paymentMethod === 'razorpay') {
-        await handleRazorpay(order);
-      } else {
-        await handleCOD(order);
-      }
-
+      if (paymentMethod === 'razorpay') await handleRazorpay(order);
+      else await handleCOD(order);
       clearCart();
       navigate(`/order-success/${order.id}`);
     } catch (err) {
       setError(err.response?.data?.message || err.message || 'Something went wrong.');
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   };
 
   if (!cartItems.length) return (
@@ -170,12 +170,9 @@ export default function Checkout() {
     <div className="checkout-page">
       <div className="checkout-inner">
         <h1 className="checkout-title">Checkout</h1>
-
         {error && <div className="checkout-error">{error}</div>}
 
         <form onSubmit={handleSubmit} className="checkout-layout">
-
-          {/* ── Left: Delivery + Payment ── */}
           <div className="checkout-left">
 
             {/* Delivery Info */}
@@ -226,29 +223,21 @@ export default function Checkout() {
               <div className="payment-options">
                 <label className={`pay-option ${paymentMethod === 'razorpay' ? 'selected' : ''}`}>
                   <input type="radio" name="payment" value="razorpay"
-                    checked={paymentMethod === 'razorpay'}
-                    onChange={() => setPaymentMethod('razorpay')} />
+                    checked={paymentMethod === 'razorpay'} onChange={() => setPaymentMethod('razorpay')} />
                   <div className="pay-icon">💳</div>
-                  <div>
-                    <strong>Pay Online</strong>
-                    <p>Cards, UPI, Net Banking via Razorpay</p>
-                  </div>
+                  <div><strong>Pay Online</strong><p>Cards, UPI, Net Banking via Razorpay</p></div>
                 </label>
                 <label className={`pay-option ${paymentMethod === 'cod' ? 'selected' : ''}`}>
                   <input type="radio" name="payment" value="cod"
-                    checked={paymentMethod === 'cod'}
-                    onChange={() => setPaymentMethod('cod')} />
+                    checked={paymentMethod === 'cod'} onChange={() => setPaymentMethod('cod')} />
                   <div className="pay-icon">💵</div>
-                  <div>
-                    <strong>Cash on Delivery</strong>
-                    <p>Pay when your order arrives</p>
-                  </div>
+                  <div><strong>Cash on Delivery</strong><p>Pay when your order arrives</p></div>
                 </label>
               </div>
             </div>
           </div>
 
-          {/* ── Right: Order Summary ── */}
+          {/* Right: Order Summary */}
           <div className="checkout-right">
             <div className="checkout-card order-summary-card">
               <h2>🛒 Order Summary</h2>
@@ -270,6 +259,40 @@ export default function Checkout() {
                   {deliveryCharge === 0 ? 'FREE' : `₹${deliveryCharge}`}
                 </span>
               </div>
+
+              {/* Coupon section */}
+              <div className="summary-divider" />
+              {!coupon ? (
+                <div className="coupon-section">
+                  <div className="coupon-input-row">
+                    <input
+                      type="text"
+                      placeholder="Coupon code"
+                      value={couponCode}
+                      onChange={e => setCouponCode(e.target.value.toUpperCase())}
+                      className="coupon-input"
+                    />
+                    <button type="button" className="coupon-apply-btn"
+                      onClick={applyCoupon} disabled={couponLoading}>
+                      {couponLoading ? '...' : 'Apply'}
+                    </button>
+                  </div>
+                  {couponError && <p className="coupon-error">{couponError}</p>}
+                </div>
+              ) : (
+                <div className="coupon-applied">
+                  <span>🎉 <strong>{coupon.code}</strong> applied!</span>
+                  <button type="button" onClick={removeCoupon} className="coupon-remove">✕ Remove</button>
+                </div>
+              )}
+
+              {discount > 0 && (
+                <div className="summary-row discount-row">
+                  <span>Discount</span>
+                  <span className="discount-amount">−₹{discount.toFixed(2)}</span>
+                </div>
+              )}
+
               <div className="summary-divider" />
               <div className="summary-row grand">
                 <span>Grand Total</span>
@@ -277,17 +300,14 @@ export default function Checkout() {
               </div>
 
               <button type="submit" className="place-order-btn" disabled={loading}>
-                {loading
-                  ? 'Processing...'
+                {loading ? 'Processing...'
                   : paymentMethod === 'razorpay'
                     ? `Pay ₹${grandTotal.toFixed(2)}`
                     : `Place Order ₹${grandTotal.toFixed(2)}`}
               </button>
-
               <p className="secure-note">🔒 Secure checkout — your data is safe</p>
             </div>
           </div>
-
         </form>
       </div>
     </div>
