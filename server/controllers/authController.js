@@ -136,51 +136,51 @@ const getMe = async (req, res) => {
 };
 
 // PUT /api/auth/update-profile
-const updateProfile = async (req, res) => {
-  try {
-    const { name, phone, address } = req.body;
+// const updateProfile = async (req, res) => {
+//   try {
+//     const { name, phone, address } = req.body;
 
-    await db.query(
-      'UPDATE tbl_users SET name = ?, phone = ?, address = ? WHERE id = ?',
-      [name, phone || null, address || null, req.user.id]
-    );
+//     await db.query(
+//       'UPDATE tbl_users SET name = ?, phone = ?, address = ? WHERE id = ?',
+//       [name, phone || null, address || null, req.user.id]
+//     );
 
-    return res.json({ success: true, message: 'Profile updated successfully.' });
-  } catch (error) {
-    console.error('UpdateProfile error:', error);
-    return res.status(500).json({ success: false, message: 'Server error.' });
-  }
-};
+//     return res.json({ success: true, message: 'Profile updated successfully.' });
+//   } catch (error) {
+//     console.error('UpdateProfile error:', error);
+//     return res.status(500).json({ success: false, message: 'Server error.' });
+//   }
+// };
 
 // PUT /api/auth/change-password
-const changePassword = async (req, res) => {
-  try {
-    const { currentPassword, newPassword } = req.body;
+// const changePassword = async (req, res) => {
+//   try {
+//     const { currentPassword, newPassword } = req.body;
 
-    if (!currentPassword || !newPassword) {
-      return res.status(400).json({ success: false, message: 'Both passwords are required.' });
-    }
+//     if (!currentPassword || !newPassword) {
+//       return res.status(400).json({ success: false, message: 'Both passwords are required.' });
+//     }
 
-    if (newPassword.length < 6) {
-      return res.status(400).json({ success: false, message: 'New password must be at least 6 characters.' });
-    }
+//     if (newPassword.length < 6) {
+//       return res.status(400).json({ success: false, message: 'New password must be at least 6 characters.' });
+//     }
 
-    const [rows] = await db.query('SELECT password FROM tbl_users WHERE id = ?', [req.user.id]);
-    const isMatch = await bcrypt.compare(currentPassword, rows[0].password);
+//     const [rows] = await db.query('SELECT password FROM tbl_users WHERE id = ?', [req.user.id]);
+//     const isMatch = await bcrypt.compare(currentPassword, rows[0].password);
 
-    if (!isMatch) {
-      return res.status(401).json({ success: false, message: 'Current password is incorrect.' });
-    }
+//     if (!isMatch) {
+//       return res.status(401).json({ success: false, message: 'Current password is incorrect.' });
+//     }
 
-    const hashed = await bcrypt.hash(newPassword, 10);
-    await db.query('UPDATE tbl_users SET password = ? WHERE id = ?', [hashed, req.user.id]);
+//     const hashed = await bcrypt.hash(newPassword, 10);
+//     await db.query('UPDATE tbl_users SET password = ? WHERE id = ?', [hashed, req.user.id]);
 
-    return res.json({ success: true, message: 'Password changed successfully.' });
-  } catch (error) {
-    console.error('ChangePassword error:', error);
-    return res.status(500).json({ success: false, message: 'Server error.' });
-  }
-};
+//     return res.json({ success: true, message: 'Password changed successfully.' });
+//   } catch (error) {
+//     console.error('ChangePassword error:', error);
+//     return res.status(500).json({ success: false, message: 'Server error.' });
+//   }
+// };
 
 const updateProfile = async (req, res) => {
   try {
