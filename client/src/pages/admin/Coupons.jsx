@@ -69,10 +69,11 @@ export default function AdminCoupons() {
                 {coupons.map(c => (
                   <tr key={c.id}>
                     <td><strong style={{ fontFamily:'monospace', fontSize:14 }}>{c.code}</strong></td>
-                    <td>{c.type === 'percent' ? '%' : '₹'} {c.type}</td>
-                    <td><strong>{c.type === 'percent' ? `${c.value}%` : `₹${c.value}`}</strong>
-                      {c.max_discount && <div style={{fontSize:11,color:'#94a3b8'}}>max ₹{c.max_discount}</div>}
-                    </td>
+                    <td>{c.discount_type === 'percent' ? 'Percentage' : 'Flat'}</td>
+<td>
+  <strong>{c.discount_type === 'percent' ? `${c.discount_value}%` : `₹${c.discount_value}`}</strong>
+  {c.max_discount && <div style={{fontSize:11,color:'#94a3b8'}}>max ₹{c.max_discount}</div>}
+</td>
                     <td>{c.min_order > 0 ? `₹${c.min_order}` : '—'}</td>
                     <td style={{fontSize:12}}>{c.expires_at ? new Date(c.expires_at).toLocaleDateString('en-IN') : '—'}</td>
                     <td>{c.used_count || 0}{c.usage_limit ? `/${c.usage_limit}` : ''}</td>
