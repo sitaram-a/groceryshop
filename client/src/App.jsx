@@ -68,8 +68,8 @@ function App() {
               element={<AdminRoute><AdminOrders /></AdminRoute>} />
             <Route path="/admin/users"
               element={<AdminRoute><AdminUsers /></AdminRoute>} />
-              <Route path="/admin/coupons" 
-              element={<AdminCoupons />} />
+              <Route path="/admin/coupons"
+  element={<AdminRoute><AdminCoupons /></AdminRoute>} />
 
             {/* ── Fallback ── */}
             <Route path="*" element={<Navigate to="/" replace />} />
