@@ -22,6 +22,10 @@ import AdminCategories from './pages/admin/AdminCategories';
 import AdminOrders     from './pages/admin/AdminOrders';
 import AdminUsers      from './pages/admin/AdminUsers';
 import AdminCoupons    from './pages/admin/Coupons';
+import Profile         from './pages/Profile';
+import Wishlist        from './pages/Wishlist';
+import { WishlistProvider } from './context/WishlistContext';
+
 
 function Layout({ children }) {
   return (
@@ -35,6 +39,7 @@ function Layout({ children }) {
 function App() {
   return (
     <AuthProvider>
+      <WishlistProvider>
       <CartProvider>
         <Router>
           <Routes>
@@ -46,7 +51,8 @@ function App() {
             <Route path="/"            element={<Layout><Home /></Layout>} />
             <Route path="/shop"        element={<Layout><Shop /></Layout>} />
             <Route path="/product/:id" element={<Layout><ProductDetail /></Layout>} />
-
+            <Route path="/profile"  element={<Layout><ProtectedRoute><Profile /></ProtectedRoute></Layout>} />
+            <Route path="/wishlist" element={<Layout><ProtectedRoute><Wishlist /></ProtectedRoute></Layout>} />
             {/* ── Customer Protected ── */}
             <Route path="/cart"
               element={<Layout><ProtectedRoute><Cart /></ProtectedRoute></Layout>} />
@@ -70,12 +76,14 @@ function App() {
               element={<AdminRoute><AdminUsers /></AdminRoute>} />
               <Route path="/admin/coupons"
   element={<AdminRoute><AdminCoupons /></AdminRoute>} />
+  
 
             {/* ── Fallback ── */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Router>
       </CartProvider>
+      </WishlistProvider>
     </AuthProvider>
   );
 }

@@ -182,4 +182,32 @@ const changePassword = async (req, res) => {
   }
 };
 
+const updateProfile = async (req, res) => {
+  try {
+    const { name, phone } = req.body;
+    if (!name) return res.status(400).json({ success: false, message: 'Name is required.' });
+    await db.query('UPDATE tbl_users SET name=?, phone=? WHERE id=?', [name, phone||null, req.user.id]);
+    const [rows] = await db.query('SELECT id,name,email,phone,role FROM tbl_users WHERE id=?', [req.user.id]);
+    return res.json({ success: true, user: rows[0] });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
+const changePassword = async (req, res) => {
+  try {
+    const { current_password, new_password } = req.body;
+    if (!current_password || !new_password)
+      return res.status(400).json({ success: false, message: 'Both fields required.' });
+    const [rows] = await db.query('SELECT password FROM tbl_users WHERE id=?', [req.user.id]);
+    const valid = await bcrypt.compare(current_password, rows[0].password);
+    if (!valid) return res.status(400).json({ success: false, message: 'Current password is incorrect.' });
+    const hash = await bcrypt.hash(new_password, 10);
+    await db.query('UPDATE tbl_users SET password=? WHERE id=?', [hash, req.user.id]);
+    return res.json({ success: true, message: 'Password changed successfully.' });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
 module.exports = { register, login, getMe, updateProfile, changePassword };

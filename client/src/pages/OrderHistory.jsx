@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import api from '../services/api';
 import './OrderHistory.css';
 
+const STEPS = ['placed','confirmed','processing','out_for_delivery','delivered'];
+
 const STATUS_COLOR = {
   placed:           { bg: '#eff6ff', color: '#1d4ed8' },
   confirmed:        { bg: '#f0fdf4', color: '#15803d' },
@@ -13,8 +15,8 @@ const STATUS_COLOR = {
 };
 
 export default function OrderHistory() {
-  const [orders, setOrders]   = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [orders, setOrders]     = useState([]);
+  const [loading, setLoading]   = useState(true);
   const [expanded, setExpanded] = useState(null);
 
   useEffect(() => {
@@ -24,9 +26,7 @@ export default function OrderHistory() {
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) return (
-    <div className="oh-page"><div className="oh-loading">Loading your orders...</div></div>
-  );
+  if (loading) return <div className="oh-page"><div className="oh-loading">Loading your orders...</div></div>;
 
   if (!orders.length) return (
     <div className="oh-page">
@@ -46,12 +46,13 @@ export default function OrderHistory() {
 
         <div className="oh-list">
           {orders.map(order => {
-            const st = STATUS_COLOR[order.order_status] || STATUS_COLOR.placed;
+            const st     = STATUS_COLOR[order.order_status] || STATUS_COLOR.placed;
             const isOpen = expanded === order.id;
+            const currentStep = STEPS.indexOf(order.order_status);
+            const isCancelled = order.order_status === 'cancelled';
 
             return (
               <div key={order.id} className="oh-card">
-                {/* Card Header */}
                 <div className="oh-card-header" onClick={() => setExpanded(isOpen ? null : order.id)}>
                   <div className="oh-left">
                     <strong className="oh-num">#{order.order_number}</strong>
@@ -70,9 +71,24 @@ export default function OrderHistory() {
                   </div>
                 </div>
 
-                {/* Expanded Details */}
                 {isOpen && (
                   <div className="oh-card-body">
+                    {/* Mini tracking timeline */}
+                    {!isCancelled && (
+                      <div className="oh-mini-timeline">
+                        {STEPS.map((step, i) => (
+                          <div key={step} className={`oh-step ${i <= currentStep ? 'done' : ''} ${i === currentStep ? 'current' : ''}`}>
+                            <div className="oh-step-dot" />
+                            {i < STEPS.length - 1 && <div className={`oh-step-line ${i < currentStep ? 'done' : ''}`} />}
+                            <div className="oh-step-name">{step.replace(/_/g,' ')}</div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {isCancelled && (
+                      <div className="oh-cancelled-badge">❌ This order was cancelled</div>
+                    )}
+
                     <div className="oh-meta">
                       <div className="oh-meta-row">
                         <span>Payment</span>

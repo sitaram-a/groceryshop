@@ -34,6 +34,8 @@ export default function Navbar() {
           <Link to="/">Home</Link>
           <Link to="/shop">Shop</Link>
           {user && <Link to="/orders">My Orders</Link>}
+          {user && <Link to="/profile"  onClick={close}>👤 My Profile</Link>}
+          {user && <Link to="/wishlist" onClick={close}>❤️ Wishlist</Link>}
         </div>
 
         {/* Desktop search bar */}

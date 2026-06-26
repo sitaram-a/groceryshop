@@ -1,71 +1,161 @@
 .os-page {
-  min-height: 100vh;
-  background: linear-gradient(135deg, #f0fdf4, #dcfce7);
-  display: flex; align-items: center; justify-content: center;
-  padding: 32px 20px;
+  min-height: calc(100vh - 64px);
+  background: #f1f5f9;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 40px 16px;
 }
-.os-loading { font-size: 16px; color: #2e7d32; }
 .os-card {
-  background: #fff; border-radius: 20px;
-  padding: 48px 40px; max-width: 560px; width: 100%;
-  box-shadow: 0 8px 40px rgba(0,0,0,0.10);
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+  padding: 40px 32px;
+  width: 100%;
+  max-width: 600px;
   text-align: center;
 }
-.os-icon {
-  font-size: 64px; margin-bottom: 16px;
-  animation: popIn 0.5s cubic-bezier(0.175,0.885,0.32,1.275);
-}
-@keyframes popIn {
-  0%   { transform: scale(0); opacity: 0; }
-  100% { transform: scale(1); opacity: 1; }
-}
-.os-card h1 { font-size: 24px; font-weight: 800; color: #1b1b1b; margin-bottom: 8px; }
-.os-sub { font-size: 14px; color: #666; line-height: 1.6; margin-bottom: 28px; }
+.os-icon { font-size: 56px; margin-bottom: 16px; }
+.os-card h1 { font-size: 24px; font-weight: 800; color: #0f172a; margin-bottom: 8px; }
+.os-sub { color: #64748b; font-size: 15px; margin-bottom: 28px; }
+.os-loading { text-align: center; padding: 60px; color: #16a34a; font-size: 16px; }
 
 .os-info-box {
-  background: #f8fdf9; border: 1.5px solid #bbf7d0;
-  border-radius: 12px; padding: 20px; text-align: left; margin-bottom: 20px;
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 24px;
+  text-align: left;
 }
 .os-info-row {
-  display: flex; justify-content: space-between; align-items: flex-start;
-  font-size: 14px; color: #555; padding: 7px 0;
-  border-bottom: 1px solid #e8f5e9;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 8px 0;
+  border-bottom: 1px solid #e2e8f0;
+  font-size: 14px;
+  gap: 12px;
 }
-.os-info-row:last-child { border-bottom: none; padding-bottom: 0; }
-.os-info-row strong { color: #1b1b1b; text-align: right; max-width: 60%; }
-.paid          { color: #15803d !important; }
-.pending-pay   { color: #d97706 !important; }
-.status-badge  { color: #2e7d32 !important; text-transform: capitalize; }
-.grand-amt     { color: #1b5e20 !important; font-size: 16px; }
+.os-info-row:last-child { border-bottom: none; }
+.os-info-row span { color: #64748b; flex-shrink: 0; }
+.os-info-row strong { color: #0f172a; text-align: right; }
+.paid { color: #16a34a !important; }
+.pending-pay { color: #d97706 !important; }
+.grand-amt { color: #16a34a !important; font-size: 16px !important; }
 
-.os-items {
-  text-align: left; margin-bottom: 24px;
+/* ── Timeline ── */
+.os-timeline {
+  margin-bottom: 28px;
+  text-align: left;
 }
-.os-items h3 { font-size: 14px; font-weight: 700; color: #444; margin-bottom: 12px; }
+.os-timeline h3 {
+  font-size: 15px;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 20px;
+}
+.timeline-steps {
+  display: flex;
+  justify-content: space-between;
+  position: relative;
+}
+.timeline-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  position: relative;
+}
+.step-icon-wrap {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  position: relative;
+}
+.step-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #e2e8f0;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  z-index: 1;
+  flex-shrink: 0;
+  transition: all 0.3s;
+}
+.timeline-step.done .step-icon {
+  background: #dcfce7;
+  color: #16a34a;
+}
+.timeline-step.current .step-icon {
+  background: #16a34a;
+  color: #fff;
+  box-shadow: 0 0 0 4px #bbf7d0;
+}
+.step-line {
+  flex: 1;
+  height: 3px;
+  background: #e2e8f0;
+  transition: background 0.3s;
+}
+.step-line.done { background: #16a34a; }
+.step-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #94a3b8;
+  margin-top: 8px;
+  text-align: center;
+  line-height: 1.3;
+}
+.timeline-step.done .step-label  { color: #16a34a; }
+.timeline-step.current .step-label { color: #15803d; font-weight: 700; }
+
+/* Items */
+.os-items { margin-bottom: 24px; text-align: left; }
+.os-items h3 { font-size: 15px; font-weight: 700; color: #0f172a; margin-bottom: 12px; }
 .os-item {
-  display: flex; align-items: center; gap: 8px;
-  font-size: 13px; color: #555; padding: 6px 0;
-  border-bottom: 1px dashed #eee;
+  display: flex;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 14px;
+  gap: 8px;
 }
 .os-item:last-child { border-bottom: none; }
-.oi-name { flex: 1; }
-.oi-qty  { color: #999; width: 36px; text-align: center; }
-.oi-price{ font-weight: 700; color: #1b1b1b; }
+.oi-name { flex: 1; color: #334155; }
+.oi-qty  { color: #64748b; white-space: nowrap; }
+.oi-price { font-weight: 700; color: #0f172a; white-space: nowrap; }
 
-.os-actions {
-  display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 8px;
-}
+.os-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
 .os-btn-outline {
-  border: 2px solid #2e7d32; color: #2e7d32;
-  padding: 11px 24px; border-radius: 9px;
-  text-decoration: none; font-weight: 700; font-size: 14px;
-  transition: background 0.2s;
+  text-decoration: none;
+  border: 2px solid #16a34a;
+  color: #16a34a;
+  padding: 10px 24px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 14px;
+  transition: all 0.2s;
 }
 .os-btn-outline:hover { background: #f0fdf4; }
 .os-btn-solid {
-  background: #2e7d32; color: #fff;
-  padding: 11px 24px; border-radius: 9px;
-  text-decoration: none; font-weight: 700; font-size: 14px;
+  text-decoration: none;
+  background: #16a34a;
+  color: #fff;
+  padding: 10px 24px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 14px;
   transition: background 0.2s;
 }
-.os-btn-solid:hover { background: #1b5e20; }
+.os-btn-solid:hover { background: #15803d; }
+
+@media (max-width: 600px) {
+  .os-card { padding: 28px 16px; }
+  .step-label { font-size: 9px; }
+  .step-icon { width: 28px; height: 28px; font-size: 13px; }
+  .timeline-steps { gap: 0; }
+}
