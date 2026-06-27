@@ -21,7 +21,9 @@ export default function OrderHistory() {
 
   useEffect(() => {
     api.get('/orders/my-orders')
-      .then(res => setOrders(res.data.orders || []))
+      .then(res =>{
+         console.log('MY ORDERS RESPONSE:', res.data);
+        setOrders(res.data.orders || [])})
       .catch(console.error)
       .finally(() => setLoading(false));
   }, []);
