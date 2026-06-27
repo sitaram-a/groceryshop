@@ -72,3 +72,26 @@
 .add-to-cart-btn:hover:not(:disabled) { background: #1b5e20; }
 .add-to-cart-btn:disabled { background: #ccc; cursor: not-allowed; }
 .add-to-cart-btn.added { background: #15803d; }
+
+/* Wishlist button on card */
+.product-wishlist-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(255,255,255,0.85);
+  border: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  transition: transform 0.2s, background 0.2s;
+  z-index: 2;
+}
+.product-wishlist-btn:hover:not(:disabled) { transform: scale(1.15); background: #fff; }
+.product-wishlist-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.product-wishlist-btn.in-wishlist { background: #fff0f0; }

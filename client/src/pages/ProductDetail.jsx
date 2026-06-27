@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import api from '../services/api';
 import { useCart } from '../context/CartContext';
+import { useWishlist } from '../context/WishlistContext';
 import './ProductDetail.css';
 
 const API_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
@@ -10,6 +11,7 @@ export default function ProductDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { addToCart } = useCart();
+  const { wishlist, toggleWishlist } = useWishlist();
 
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -17,6 +19,7 @@ export default function ProductDetail() {
   const [qty, setQty]         = useState(1);
   const [adding, setAdding]   = useState(false);
   const [added, setAdded]     = useState(false);
+  const [wishlisting, setWishlisting] = useState(false);
 
   useEffect(() => {
     setLoading(true);
@@ -35,6 +38,14 @@ export default function ProductDetail() {
       setAdded(true);
       setTimeout(() => setAdded(false), 2000);
     }
+  };
+
+  const handleToggleWishlist = async () => {
+    if (wishlisting) return;
+    setWishlisting(true);
+    const result = await toggleWishlist(product.id);
+    if (result === false) navigate('/login');
+    setWishlisting(false);
   };
 
   if (loading) return (
@@ -126,6 +137,14 @@ const imageUrl = product.image
                 disabled={adding}
               >
                 {adding ? 'Adding...' : added ? '✓ Added to Cart!' : '+ Add to Cart'}
+              </button>
+              <button
+                className={`pd-wishlist-btn ${wishlist.has(product.id) ? 'in-wishlist' : ''}`}
+                onClick={handleToggleWishlist}
+                disabled={wishlisting}
+                title={wishlist.has(product.id) ? 'Remove from Wishlist' : 'Add to Wishlist'}
+              >
+                {wishlist.has(product.id) ? '❤️' : '🤍'}
               </button>
             </div>
           )}

@@ -1,15 +1,18 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
+import { useWishlist } from '../context/WishlistContext';
 import './ProductCard.css';
 
 const API_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
 
 export default function ProductCard({ product }) {
   const { addToCart } = useCart();
+  const { wishlist, toggleWishlist } = useWishlist();
   const navigate = useNavigate();
   const [adding, setAdding] = useState(false);
   const [added, setAdded] = useState(false);
+  const [wishlisting, setWishlisting] = useState(false);
 
   const price = parseFloat(product.price);
   const discountPrice = product.discount_price ? parseFloat(product.discount_price) : null;
@@ -37,12 +40,29 @@ export default function ProductCard({ product }) {
     }
   };
 
+  const handleToggleWishlist = async (e) => {
+    e.preventDefault();
+    if (wishlisting) return;
+    setWishlisting(true);
+    const result = await toggleWishlist(product.id);
+    if (result === false) navigate('/login');
+    setWishlisting(false);
+  };
+
   return (
     <div className="product-card">
       <Link to={`/product/${product.id}`} className="product-img-wrap">
         {discount > 0 && <span className="discount-badge">{discount}% OFF</span>}
         {product.stock === 0 && <span className="out-of-stock-badge">Out of Stock</span>}
         <img src={imageUrl} alt={product.name} loading="lazy" />
+        <button
+          className={`product-wishlist-btn ${wishlist.has(product.id) ? 'in-wishlist' : ''}`}
+          onClick={handleToggleWishlist}
+          disabled={wishlisting}
+          title={wishlist.has(product.id) ? 'Remove from Wishlist' : 'Add to Wishlist'}
+        >
+          {wishlist.has(product.id) ? '❤️' : '🤍'}
+        </button>
       </Link>
 
       <div className="product-info">
