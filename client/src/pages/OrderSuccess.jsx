@@ -3,22 +3,28 @@ import { useParams, Link } from 'react-router-dom';
 import api from '../services/api';
 import './OrderSuccess.css';
 
-const STEPS = [
-  { key: 'placed',           label: 'Order Placed',     icon: '📋' },
-  { key: 'confirmed',        label: 'Confirmed',         icon: '✅' },
-  { key: 'processing',       label: 'Processing',        icon: '⚙️' },
-  { key: 'out_for_delivery', label: 'Out for Delivery',  icon: '🚚' },
-  { key: 'delivered',        label: 'Delivered',         icon: '🎉' },
+const ALL_STEPS = [
+  { key: 'placed',           label: 'Order Placed',    icon: '📋' },
+  { key: 'confirmed',        label: 'Confirmed',        icon: '✅' },
+  { key: 'processing',       label: 'Processing',       icon: '⚙️'  },
+  { key: 'out_for_delivery', label: 'Out for Delivery', icon: '🚚' },
+  { key: 'delivered',        label: 'Delivered',        icon: '🎉' },
 ];
 
 const getStepIndex = (status) => {
   if (status === 'cancelled') return -1;
-  return STEPS.findIndex(s => s.key === status);
+  return ALL_STEPS.findIndex(s => s.key === status);
 };
+
+const fmt = (ts) =>
+  new Date(ts).toLocaleString('en-IN', {
+    day: 'numeric', month: 'short', year: 'numeric',
+    hour: '2-digit', minute: '2-digit',
+  });
 
 export default function OrderSuccess() {
   const { id } = useParams();
-  const [order, setOrder]   = useState(null);
+  const [order,   setOrder]   = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -32,6 +38,10 @@ export default function OrderSuccess() {
 
   const currentStep = order ? getStepIndex(order.order_status) : 0;
   const isCancelled = order?.order_status === 'cancelled';
+
+  // Build a map: status -> timeline entry (for timestamps)
+  const timelineMap = {};
+  (order?.timeline || []).forEach(t => { timelineMap[t.status] = t; });
 
   return (
     <div className="os-page">
@@ -61,25 +71,41 @@ export default function OrderSuccess() {
               <div className="os-info-row"><span>Deliver To</span><strong>{order.delivery_address}</strong></div>
             </div>
 
-            {/* Order Tracking Timeline */}
+            {/* ── Order Tracking Timeline ── */}
             {!isCancelled && (
               <div className="os-timeline">
                 <h3>Order Tracking</h3>
                 <div className="timeline-steps">
-                  {STEPS.map((step, i) => {
+                  {ALL_STEPS.map((step, i) => {
                     const done    = i <= currentStep;
                     const current = i === currentStep;
+                    const entry   = timelineMap[step.key];
                     return (
                       <div key={step.key} className={`timeline-step ${done ? 'done' : ''} ${current ? 'current' : ''}`}>
                         <div className="step-icon-wrap">
                           <div className="step-icon">{done ? step.icon : '○'}</div>
-                          {i < STEPS.length - 1 && <div className={`step-line ${i < currentStep ? 'done' : ''}`} />}
+                          {i < ALL_STEPS.length - 1 && (
+                            <div className={`step-line ${i < currentStep ? 'done' : ''}`} />
+                          )}
                         </div>
                         <div className="step-label">{step.label}</div>
+                        {entry && (
+                          <div className="step-timestamp">{fmt(entry.created_at)}</div>
+                        )}
+                        {entry?.note && (
+                          <div className="step-note">{entry.note}</div>
+                        )}
                       </div>
                     );
                   })}
                 </div>
+              </div>
+            )}
+
+            {isCancelled && timelineMap['cancelled'] && (
+              <div className="os-cancelled-info">
+                <span>❌ Cancelled on {fmt(timelineMap['cancelled'].created_at)}</span>
+                {timelineMap['cancelled'].note && <p>{timelineMap['cancelled'].note}</p>}
               </div>
             )}
 

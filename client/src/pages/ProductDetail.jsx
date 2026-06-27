@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import api from '../services/api';
 import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
+import ProductReviews from '../components/ProductReviews';
 import './ProductDetail.css';
 
 const API_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
@@ -156,6 +157,9 @@ const imageUrl = product.image
           )}
         </div>
       </div>
+
+      {/* Reviews section */}
+      <ProductReviews productId={product.id} />
     </div>
   );
 }
