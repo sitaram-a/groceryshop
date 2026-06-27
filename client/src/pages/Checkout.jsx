@@ -27,30 +27,31 @@ export default function Checkout() {
   const [coupon,        setCoupon]        = useState(null);
   const [couponLoading, setCouponLoading] = useState(false);
   const [couponError,   setCouponError]   = useState('');
+  const [couponSuccess, setCouponSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error,   setError]   = useState('');
 
   const deliveryCharge = cartTotal >= 500 ? 0 : 40;
   const discount = coupon
-  ? coupon.type === 'percent'
-    ? Math.min((cartTotal * coupon.value) / 100, coupon.max_discount || Infinity)
-    : coupon.value
-  : 0;
+    ? coupon.type === 'percent'
+      ? Math.min((cartTotal * coupon.value) / 100, coupon.max_discount || Infinity)
+      : coupon.value
+    : 0;
   const grandTotal = Math.max(0, cartTotal + deliveryCharge - discount);
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
   const buildAddress = () => `${form.address}, ${form.city}, ${form.state} - ${form.pincode}`;
 
-  // Apply coupon
   const applyCoupon = async () => {
     if (!couponCode.trim()) return;
-    setCouponLoading(true); setCouponError(''); setCoupon(null);
+    setCouponLoading(true); setCouponError(''); setCoupon(null); setCouponSuccess(false);
     try {
       const res = await api.post('/payment/validate-coupon', {
         code: couponCode.trim().toUpperCase(),
         cart_total: cartTotal,
       });
       setCoupon(res.data.coupon);
+      setCouponSuccess(true);
     } catch (err) {
       setCouponError(err.response?.data?.message || 'Invalid coupon code.');
     } finally {
@@ -58,9 +59,11 @@ export default function Checkout() {
     }
   };
 
-  const removeCoupon = () => { setCoupon(null); setCouponCode(''); setCouponError(''); };
+  const removeCoupon = () => {
+    setCoupon(null); setCouponCode('');
+    setCouponError(''); setCouponSuccess(false);
+  };
 
-  // Place order in DB
   const placeOrderInDB = async () => {
     const res = await api.post('/orders/place', {
       delivery_address: buildAddress(),
@@ -72,13 +75,11 @@ export default function Checkout() {
     return res.data.order;
   };
 
-  // Cancel order
   const cancelOrderInDB = async (orderId) => {
     try { await api.post(`/orders/${orderId}/cancel`); }
     catch (e) { console.error('Failed to cancel order:', e.message); }
   };
 
-  // Razorpay handler
   const handleRazorpay = (order) => {
     return new Promise(async (resolve, reject) => {
       if (!window.Razorpay) {
@@ -260,31 +261,74 @@ export default function Checkout() {
                 </span>
               </div>
 
-              {/* Coupon section */}
+              {/* ── Modern Coupon Section ── */}
               <div className="summary-divider" />
-              {!coupon ? (
-                <div className="coupon-section">
-                  <div className="coupon-input-row">
-                    <input
-                      type="text"
-                      placeholder="Coupon code"
-                      value={couponCode}
-                      onChange={e => setCouponCode(e.target.value.toUpperCase())}
-                      className="coupon-input"
-                    />
-                    <button type="button" className="coupon-apply-btn"
-                      onClick={applyCoupon} disabled={couponLoading}>
-                      {couponLoading ? '...' : 'Apply'}
+              <div className={`coupon-section ${coupon ? 'has-coupon' : ''}`}>
+                <div className="coupon-label">
+                  <span className="coupon-tag-icon">🏷️</span>
+                  <span>Have a coupon?</span>
+                </div>
+
+                {!coupon ? (
+                  <div className={`coupon-input-wrap ${couponError ? 'shake' : ''}`}>
+                    <div className={`coupon-field ${couponLoading ? 'loading' : ''}`}>
+                      <span className="coupon-field-icon">%</span>
+                      <input
+                        type="text"
+                        placeholder="Enter coupon code"
+                        value={couponCode}
+                        onChange={e => { setCouponCode(e.target.value.toUpperCase()); setCouponError(''); }}
+                        className="coupon-input"
+                        onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), applyCoupon())}
+                        maxLength={20}
+                        disabled={couponLoading}
+                      />
+                      {couponCode && !couponLoading && (
+                        <button type="button" className="coupon-clear-x" onClick={() => { setCouponCode(''); setCouponError(''); }}>✕</button>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      className={`coupon-apply-btn ${couponLoading ? 'loading' : ''}`}
+                      onClick={applyCoupon}
+                      disabled={couponLoading || !couponCode.trim()}
+                    >
+                      {couponLoading ? <span className="coupon-spinner" /> : 'Apply'}
                     </button>
                   </div>
-                  {couponError && <p className="coupon-error">{couponError}</p>}
-                </div>
-              ) : (
-                <div className="coupon-applied">
-                  <span>🎉 <strong>{coupon.code}</strong> applied!</span>
-                  <button type="button" onClick={removeCoupon} className="coupon-remove">✕ Remove</button>
-                </div>
-              )}
+                ) : null}
+
+                {couponError && (
+                  <div className="coupon-feedback error">
+                    <span>❌</span> {couponError}
+                  </div>
+                )}
+
+                {coupon && (
+                  <div className="coupon-applied-card">
+                    <div className="coupon-confetti" aria-hidden>🎊</div>
+                    <div className="coupon-applied-body">
+                      <div className="coupon-applied-top">
+                        <span className="coupon-check">✓</span>
+                        <div>
+                          <p className="coupon-applied-code">{coupon.code}</p>
+                          <p className="coupon-applied-desc">
+                            {coupon.type === 'percent'
+                              ? `${coupon.value}% off applied`
+                              : `₹${coupon.value} off applied`}
+                          </p>
+                        </div>
+                      </div>
+                      <button type="button" className="coupon-remove-btn" onClick={removeCoupon}>
+                        Remove
+                      </button>
+                    </div>
+                    <div className="coupon-savings-bar">
+                      You're saving <strong>₹{discount.toFixed(2)}</strong> 🎉
+                    </div>
+                  </div>
+                )}
+              </div>
 
               {discount > 0 && (
                 <div className="summary-row discount-row">
@@ -300,7 +344,8 @@ export default function Checkout() {
               </div>
 
               <button type="submit" className="place-order-btn" disabled={loading}>
-                {loading ? 'Processing...'
+                {loading
+                  ? <><span className="btn-spinner" /> Processing...</>
                   : paymentMethod === 'razorpay'
                     ? `Pay ₹${grandTotal.toFixed(2)}`
                     : `Place Order ₹${grandTotal.toFixed(2)}`}

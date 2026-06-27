@@ -2,14 +2,21 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import './Cart.css';
 
-const API_URL = import.meta.env.VITE_API_URL?.replace('/api','') || 'http://localhost:5000';
-
 export default function Cart() {
   const { cartItems, cartLoading, cartTotal, updateQuantity, removeFromCart, clearCart } = useCart();
   const navigate = useNavigate();
 
   const deliveryCharge = cartTotal >= 500 ? 0 : 40;
   const grandTotal     = cartTotal + deliveryCharge;
+
+  // Fix image URL — Cloudinary images are already full URLs
+  const getImageUrl = (image) => {
+    if (!image) return 'https://placehold.co/80x80/e8f5e9/2e7d32?text=No+Img';
+    if (image.startsWith('http://') || image.startsWith('https://')) return image;
+    // fallback for local uploads
+    const base = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000';
+    return `${base}${image}`;
+  };
 
   if (cartLoading) return (
     <div className="cart-page">
@@ -39,35 +46,39 @@ export default function Cart() {
         <div className="cart-layout">
           {/* ── Items ── */}
           <div className="cart-items">
-            {cartItems.map(item => {
-              const imageUrl = item.image
-                ? `${API_URL}${item.image}`
-                : 'https://placehold.co/80x80/e8f5e9/2e7d32?text=No+Img';
-              return (
-                <div key={item.id} className="cart-item">
-                  <img src={imageUrl} alt={item.name} className="item-img" />
-                  <div className="item-details">
-                    <p className="item-name">{item.name}</p>
-                    {item.unit && <p className="item-unit">{item.unit}</p>}
-                    <p className="item-price">₹{parseFloat(item.price).toFixed(2)}</p>
+            {cartItems.map(item => (
+              <div key={item.id} className="cart-item">
+                <img
+                  src={getImageUrl(item.image)}
+                  alt={item.name}
+                  className="item-img"
+                  onError={e => { e.target.src = 'https://placehold.co/80x80/e8f5e9/2e7d32?text=No+Img'; }}
+                />
+                <div className="item-details">
+                  <p className="item-name">{item.name}</p>
+                  {item.unit && <p className="item-unit">{item.unit}</p>}
+                  <p className="item-price">₹{parseFloat(item.price).toFixed(2)}</p>
+
+                  {/* Mobile: qty + subtotal inside details */}
+                  <div className="item-bottom-row">
+                    <div className="item-qty">
+                      <button onClick={() => item.quantity > 1
+                        ? updateQuantity(item.id, item.quantity - 1)
+                        : removeFromCart(item.id)}>−</button>
+                      <span>{item.quantity}</span>
+                      <button
+                        onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                        disabled={item.quantity >= item.stock}
+                      >+</button>
+                    </div>
+                    <div className="item-subtotal">
+                      ₹{(parseFloat(item.price) * item.quantity).toFixed(2)}
+                    </div>
                   </div>
-                  <div className="item-qty">
-                    <button onClick={() => item.quantity > 1
-                      ? updateQuantity(item.id, item.quantity - 1)
-                      : removeFromCart(item.id)}>−</button>
-                    <span>{item.quantity}</span>
-                    <button
-                      onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                      disabled={item.quantity >= item.stock}
-                    >+</button>
-                  </div>
-                  <div className="item-subtotal">
-                    ₹{(parseFloat(item.price) * item.quantity).toFixed(2)}
-                  </div>
-                  <button className="item-remove" onClick={() => removeFromCart(item.id)}>✕</button>
                 </div>
-              );
-            })}
+                <button className="item-remove" onClick={() => removeFromCart(item.id)}>✕</button>
+              </div>
+            ))}
           </div>
 
           {/* ── Summary ── */}
