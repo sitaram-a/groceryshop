@@ -70,7 +70,7 @@ export default function Checkout() {
       notes:            form.notes || null,
       payment_method:   paymentMethod,
       coupon_code:      coupon?.code || null,
-      discount_amount:  discount || 0,
+      // discount is now calculated SERVER-SIDE from coupon_code
     });
     return res.data.order;
   };
